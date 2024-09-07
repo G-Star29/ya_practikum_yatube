@@ -1,7 +1,20 @@
 <!-- templates/posts/index.html -->
 {% extends 'base.html' %}
 {% block content %}
-    <div class="container py-5">
-        Информация на главной странице будет тут.
-    </div>
+    <h1>Последние обновления на сайте</h1>
+    {% for post in posts %}
+    <article>
+        <ul>
+            <li>
+                Автор: {{ post.author.get_full_name }}
+            </li>
+            <li>
+                Дата публикации: {{ post.pub_date|date:"d M Y" }}
+            </li>
+        </ul>
+        <p>{{ post.text|linebreaksbr }}</p>
+    </article>
+    {% if not forloop.last %} <hr> {% endif %}
+    {% endfor %}
+
 {% endblock %}
