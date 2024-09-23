@@ -1,11 +1,12 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404, redirect, get_list_or_404
 from django.core.paginator import Paginator
 
 from .forms import PostForm, CommentForm
-from .models import Post, Group
+from .models import Post, Group, Follow
 
-
+User = get_user_model()
 # Create your views here.
 def index(request):
     template = 'posts/index.html'
@@ -37,6 +38,10 @@ def group_posts(request, slug):
 
 def profile(request, username):
 
+    following_user = get_object_or_404(User, username=username)
+
+    following = Follow.objects.filter(author=following_user, user=request.user)
+    print(following)
     posts = Post.objects.filter(author__username=username).order_by('-pub_date')
     count_posts = posts.count()
     paginator = Paginator(posts, 10)
@@ -49,6 +54,7 @@ def profile(request, username):
         'count_posts': count_posts,
         'title': title,
         'username': username,
+        'following': following,
     }
 
     return render(request, 'posts/profile.html', context)
@@ -123,3 +129,38 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
     return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+def profile_follow(request, username):
+
+    following = get_object_or_404(User, username=username)
+    follower = request.user
+    if follower != following and follower != following.follower:
+        Follow.objects.get_or_create(user=follower, author=following)
+    return redirect('posts:profile', username=username)
+
+@login_required
+def profile_unfollow(request, username):
+    following = get_object_or_404(User, username=username)
+    Follow.objects.filter(
+        user=request.user,
+        author=following
+    ).delete()
+    return redirect('posts:profile', username)
+
+
+@login_required
+def follow_index(request):
+    user = request.user
+    follow_authors = Follow.objects.filter(user=user).values_list('author_id', flat=True)
+    posts = Post.objects.filter(author__in=follow_authors).order_by('-pub_date')
+    print(posts)
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {
+        'page_obj': page_obj,
+    }
+    return render(request, 'posts/follow.html', context)
+

@@ -1,11 +1,9 @@
-<!-- templates/posts/index.html -->
 {% extends 'base.html' %}
 {% block content %}
 {% load thumbnail %}
 {% load cache %}
-    <h1>Последние обновления на сайте</h1>
     {% include 'posts/includes/switcher.html' %}
-    {% cache 20 index_page %}
+    {% cache 20 follow_page %}
     {% for post in page_obj %}
     <article>
         <ul>
